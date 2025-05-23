@@ -1,7 +1,7 @@
 // src/app/admin/page.tsx
 "use client";
 
-import AdminDashboardLayout from "./components/layout";
+import AdminDashboardLayout from "@/app/admin/components/layout";
 import Sidebar from "./dashboard/components/Sidebar";
 import Navbar from "./dashboard/components/Navbar";
 import Footer from "./dashboard/components/Footer";

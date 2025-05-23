@@ -1,11 +1,11 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 
-export default function NewStatementRequest() {
+function NewStatementRequestForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -77,5 +77,13 @@ export default function NewStatementRequest() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="text-center mt-10">جاري تحميل النموذج...</div>}>
+      <NewStatementRequestForm />
+    </Suspense>
   );
 }

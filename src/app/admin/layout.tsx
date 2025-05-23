@@ -1,22 +1,16 @@
-// src/app/admin/page.tsx
-"use client";
-
-import AdminDashboardLayout from "@/app/admin/components/layout";
+import AdminDashboardLayout from "./components/layout";
 import Sidebar from "./dashboard/components/Sidebar";
 import Navbar from "./dashboard/components/Navbar";
 import Footer from "./dashboard/components/Footer";
 
-export default function AdminHomePage() {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <AdminDashboardLayout
       sidebar={<Sidebar />}
       navbar={<Navbar />}
       footer={<Footer />}
     >
-      <div className="p-6">
-        <h1 className="text-2xl font-bold">لوحة تحكم الأدمن</h1>
-        <p>مرحبًا بك في النظام.</p>
-      </div>
+      {children}
     </AdminDashboardLayout>
   );
 }

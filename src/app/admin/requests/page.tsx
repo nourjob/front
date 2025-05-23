@@ -1,6 +1,5 @@
 'use client';
 export const dynamic = 'force-dynamic';
-// تعديل AdminRequestPage لاستدعاء المودال ومنع الموافقة/الرفض على الحالات غير pending
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -25,7 +24,6 @@ interface FilterState {
   requestType: string;
   status: string;
   date: string;
-  user_name: string;
   page: number;
 }
 
@@ -71,7 +69,7 @@ function RequestRow({
       <td className="px-6 py-4 border-b text-sm text-gray-600">
         {request.user_name || "غير معروف"}
       </td>
-      <td className="px-6 py-4 border-b text-sm text-gray-600">
+      <td className="px-6 py-4 border-b text-sm text-gray-600 space-x-1 rtl:space-x-reverse">
         <button
           onClick={() => onShowDetails(request.id, type)}
           className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -87,7 +85,6 @@ function RequestRow({
             >
               موافقة
             </button>
-
             <button
               onClick={() => onReject(request.id, type)}
               className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
@@ -108,10 +105,7 @@ function RequestRow({
   );
 }
 
-function debounce<Func extends (...args: any[]) => void>(
-  func: Func,
-  wait: number
-) {
+function debounce<Func extends (...args: any[]) => void>(func: Func, wait: number) {
   let timeout: ReturnType<typeof setTimeout>;
   return (...args: Parameters<Func>) => {
     clearTimeout(timeout);
@@ -126,17 +120,15 @@ export default function AdminRequestPage() {
     requestType: "",
     status: "",
     date: "",
-    user_name: "",
     page: 1,
   });
-
-  const [totalPages, setTotalPages] = useState(1);
 
   const [requests, setRequests] = useState<RequestsState>({
     leaveRequests: [],
     statementRequests: [],
     courseRequests: [],
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -159,7 +151,6 @@ export default function AdminRequestPage() {
       if (filters.requestType) params.type = filters.requestType;
       if (filters.status) params.status = filters.status;
       if (filters.date) params.date = filters.date;
-      if (filters.user_name) params.user_name = filters.user_name; // ✅ مضاف
 
       const response = await api.get("/requests/all", { params });
       const data = response.data;
@@ -175,7 +166,7 @@ export default function AdminRequestPage() {
           ? data.courseRequests
           : [],
       });
-    } catch (error) {
+    } catch {
       setError("حدث خطأ أثناء الاتصال بالسيرفر.");
       setRequests({
         leaveRequests: [],
@@ -251,21 +242,9 @@ export default function AdminRequestPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <h2 className="text-3xl font-bold text-gray-800">إدارة الطلبات</h2>
 
-      {/* فلترة الطلبات */}
       <div className="bg-white rounded-2xl shadow p-4 md:p-6 border">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">
-          فلترة الطلبات
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <input
-            type="text"
-            name="user_name"
-            value={filter.user_name}
-            onChange={handleFilterChange}
-            placeholder="اسم المستخدم"
-            className="p-2 border rounded-lg text-sm"
-          />
-
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">فلترة الطلبات</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <select
             name="requestType"
             value={filter.requestType}
@@ -300,19 +279,9 @@ export default function AdminRequestPage() {
         </div>
       </div>
 
-      {/* إحصائيات */}
-      <div className="text-sm text-gray-600">
-        عدد الطلبات:
-        <span className="ml-2">إجازة: {requests.leaveRequests.length}</span> |
-        <span className="ml-2">بيان: {requests.statementRequests.length}</span>{" "}
-        |<span className="ml-2">دورة: {requests.courseRequests.length}</span>
-      </div>
-
-      {/* تحميل أو خطأ */}
       {loading && <p className="text-blue-600 font-medium">جاري التحميل...</p>}
       {error && <p className="text-red-500 font-medium">{error}</p>}
 
-      {/* جدول الطلبات */}
       <div className="overflow-x-auto bg-white shadow rounded-2xl border">
         <table className="w-full text-sm text-gray-700">
           <thead className="bg-gray-100 text-gray-800">
@@ -332,7 +301,6 @@ export default function AdminRequestPage() {
         </table>
       </div>
 
-      {/* مودال الموافقة */}
       <ApproveModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

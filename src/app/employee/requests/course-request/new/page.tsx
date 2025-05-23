@@ -1,31 +1,30 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/axios";
 
-const schema = z
-  .object({
-    course_id: z.string().optional(),
-    custom_course_title: z.string().optional(),
-    custom_course_provider: z.string().optional(),
-    reason: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      const hasCourseId = !!data.course_id;
-      const hasCustom = !!data.custom_course_title;
-      return (hasCourseId || hasCustom) && !(hasCourseId && hasCustom);
-    },
-    {
-      message: "يجب اختيار دورة موجودة أو كتابة دورة خارجية، وليس الاثنين معًا",
-      path: ["course_id"],
-    }
-  );
+// ----------------- Schema & Types -----------------
+const schema = z.object({
+  course_id: z.string().optional(),
+  custom_course_title: z.string().optional(),
+  custom_course_provider: z.string().optional(),
+  reason: z.string().optional(),
+}).refine(
+  (data) => {
+    const hasCourseId = !!data.course_id;
+    const hasCustom = !!data.custom_course_title;
+    return (hasCourseId || hasCustom) && !(hasCourseId && hasCustom);
+  },
+  {
+    message: "يجب اختيار دورة موجودة أو كتابة دورة خارجية، وليس الاثنين معًا",
+    path: ["course_id"],
+  }
+);
 
 type FormData = z.infer<typeof schema>;
 
@@ -34,15 +33,16 @@ interface Course {
   name: string;
 }
 
-export default function CreateCourseRequestPage() {
+// ----------------- Inner Form Component -----------------
+function CourseRequestForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedCourseId = searchParams.get("course_id");
 
   const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [alreadyRegistered, setAlreadyRegistered] = useState<boolean>(false);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
   const {
     register,
@@ -50,13 +50,10 @@ export default function CreateCourseRequestPage() {
     formState: { errors },
     setValue,
     watch,
-  } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  });
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const selectedCourseId = watch("course_id");
 
-  // ✅ تعيين course_id من الرابط عند تحميل الصفحة
   useEffect(() => {
     if (preselectedCourseId) {
       setValue("course_id", preselectedCourseId);
@@ -69,14 +66,9 @@ export default function CreateCourseRequestPage() {
       try {
         setLoading(true);
         const res = await api.get("/course");
-        if (res.data?.data) {
-          setCourses(res.data.data);
-        } else {
-          setError("لم يتم العثور على الدورات");
-        }
+        setCourses(res.data?.data || []);
       } catch (err) {
         setError("حدث خطأ في تحميل الدورات");
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -89,9 +81,8 @@ export default function CreateCourseRequestPage() {
     try {
       const res = await api.get(`/course-requests/check/${courseId}`);
       setAlreadyRegistered(res.data.exists);
-    } catch (error) {
+    } catch {
       setError("حدث خطأ أثناء التحقق من التسجيل");
-      console.error(error);
     }
   };
 
@@ -107,23 +98,13 @@ export default function CreateCourseRequestPage() {
       alert("تم تقديم الطلب بنجاح");
       router.push("/employee/requests/my");
     } catch (error: any) {
-      if (error.response?.status === 422) {
-        const serverMessage =
-          error.response.data.message || "خطأ في التحقق من البيانات";
-        const errors = error.response.data.errors || null;
-
-        if (errors) {
-          const messages = Object.values(errors).flat();
-          alert(messages.join("\n"));
-        } else if (serverMessage) {
-          alert(serverMessage);
-        } else {
-          alert("حدث خطأ أثناء تقديم الطلب");
-        }
+      const errors = error.response?.data?.errors;
+      if (errors) {
+        const messages = Object.values(errors).flat();
+        alert(messages.join("\n"));
       } else {
         alert("حدث خطأ أثناء تقديم الطلب");
       }
-      console.error(error);
     }
   };
 
@@ -139,20 +120,13 @@ export default function CreateCourseRequestPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="font-medium">اختيار دورة من النظام</label>
-            <select
-              {...register("course_id")}
-              className="w-full mt-1 p-2 border rounded"
-            >
+            <select {...register("course_id")} className="w-full mt-1 p-2 border rounded">
               <option value="">— اختر دورة —</option>
-              {courses.length > 0 ? (
-                courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                  </option>
-                ))
-              ) : (
-                <option disabled>لا توجد دورات حالياً</option>
-              )}
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -169,9 +143,7 @@ export default function CreateCourseRequestPage() {
               </div>
 
               <div>
-                <label className="font-medium">
-                  الجهة المقدمة للدورة (اختياري)
-                </label>
+                <label className="font-medium">الجهة المقدمة (اختياري)</label>
                 <input
                   type="text"
                   {...register("custom_course_provider")}
@@ -211,5 +183,14 @@ export default function CreateCourseRequestPage() {
         </form>
       )}
     </div>
+  );
+}
+
+// ----------------- Suspense Wrapper -----------------
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="text-center mt-10">جاري تحميل النموذج...</div>}>
+      <CourseRequestForm />
+    </Suspense>
   );
 }

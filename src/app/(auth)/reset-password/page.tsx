@@ -1,11 +1,11 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -82,5 +82,13 @@ export default function ResetPasswordPage() {
         إعادة التعيين
       </button>
     </form>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="text-center mt-20">جاري تحميل النموذج...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
